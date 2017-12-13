@@ -1,0 +1,248 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns:sfdc="http://www.mulesoft.org/schema/mule/sfdc" xmlns:anypoint-mq="http://www.mulesoft.org/schema/mule/anypoint-mq" xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw" xmlns:zuora="http://www.mulesoft.org/schema/mule/zuora" xmlns:mulexml="http://www.mulesoft.org/schema/mule/xml" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/zuora http://www.mulesoft.org/schema/mule/zuora/current/mule-zuora.xsd
+http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/xml http://www.mulesoft.org/schema/mule/xml/current/mule-xml.xsd
+http://www.mulesoft.org/schema/mule/anypoint-mq http://www.mulesoft.org/schema/mule/anypoint-mq/current/mule-anypoint-mq.xsd
+http://www.mulesoft.org/schema/mule/sfdc http://www.mulesoft.org/schema/mule/sfdc/current/mule-sfdc.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd">
+   <mulexml:namespace-manager includeConfigNamespaces="true">
+ <mulexml:namespace prefix="ns1" uri="http://api.zuora.com/"/>
+ <mulexml:namespace prefix="ns2" uri="http://object.api.zuora.com/"/>
+ </mulexml:namespace-manager>
+    <zuora:config name="Zuora__Configuration" username="${connection.zuora.01.username}" password="${connection.zuora.01.password}" wsdlLocation="${connection.zuora.01.wsdllocation}" doc:name="Zuora: Configuration">
+        <reconnect frequency="5000" count="3"/>
+    </zuora:config>
+    <flow name="fcm-zuora-orderFlow">
+        <enricher target="#[flowVars.accountUpdateResponse]" doc:name="Message Enricher">
+            <flow-ref name="fcm-zuora-accountUpdate_Flow" doc:name="fcm-zuora-accountUpdate_Flow"/>
+        </enricher>
+        <choice doc:name="Choice">
+            <when expression="#[payload.status=='true']">
+                <dw:transform-message doc:name="Transform Message">
+                    <dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+payload[0].order.orderLineItems groupBy $.zuoraProductRatePlanID  map {
+	
+	($)
+}]]></dw:set-payload>
+                </dw:transform-message>
+                <dw:transform-message doc:name="Transform Message">
+                    <dw:set-payload><![CDATA[%dw 1.0
+%output application/xml skipNullOn = "everywhere"
+%namespace ns0 http://api.zuora.com/
+%namespace ns1 http://object.api.zuora.com/
+---
+{
+	ns0#subscribe: {
+		ns0#subscribes: {
+			ns0#Account: {
+				ns1#Id: flowVars.order[0].order.zuoraShipToAccount
+			},
+			ns0#SubscribeOptions: {
+				ns0#GenerateInvoice: true when flowVars.productUpfrontBilling  == 'TRUE' otherwise false,
+				ns0#ProcessPayments: false,
+				ns0#SubscribeInvoiceProcessingOptions: {
+					ns0#InvoiceProcessingScope: "Subscription"
+				}
+			},
+			ns0#SubscriptionData: {
+				ns0#Subscription: {
+					
+					ns1#InitialTerm: flowVars.order[0].order.term as :number {format: "0"},
+					ns1#RenewalTerm: flowVars.order[0].order.term as :number {format: "0"},
+					
+					ns1#GotoMarketRoute__c: flowVars.order[0].order.marketRoute,
+					ns1#ApttusOrderID__c: flowVars.order[0].order.orderId,
+					ns1#ApttusOrderNumber__c: flowVars.order[0].order.orderNumber,
+					ns1#AccountId: flowVars.order[0].order.zuoraShipToId, // flowVars.order[3][0].Apttus_Config2__SoldToAccountId__c,
+					ns1#InvoiceOwnerId: flowVars.order[0].order.zuoraShipToId, // flowVars.order[3][0].Apttus_Config2__BillToAccountId__c,
+					
+					ns1#TermType: "TERMED",
+					ns1#RenewalSetting: "RENEW_WITH_SPECIFIC_TERM",
+
+					ns1#IsInvoiceSeparate: "TRUE",
+					ns1#TermStartDate: null when flowVars.order[0].order.orderfulfillmentDate==null otherwise flowVars.order[0].order.orderfulfillmentDate[0..9],
+					ns1#ContractEffectiveDate: null when flowVars.order[0].order.orderfulfillmentDate==null otherwise flowVars.order[0].order.orderfulfillmentDate[0..9],
+					ns1#Incoterm__c: flowVars.order[0].order.incoterm,
+					ns1#ServiceActivationDate: null when flowVars.order[0].order.orderfulfillmentDate==null otherwise flowVars.order[0].order.orderfulfillmentDate[0..9],
+					ns1#ContractAcceptanceDate: null when flowVars.order[0].order.orderfulfillmentDate==null otherwise flowVars.order[0].order.orderfulfillmentDate[0..9],
+					ns1#PONumber__c: flowVars.order[0].order.poNumber,
+					ns1#POAmount__c: flowVars.order[0].order.poAmount,
+					ns1#Subsidiary__c: flowVars.order[0].order.subsidiary,
+					
+					ns1#OrderType__c:flowVars.order[0].order.orderType
+					
+				},
+				(payload map ((payload01,indexOfPayload01) -> ns0#RatePlanData: {
+					ns0#RatePlan: {
+						ns1#ProductRatePlanId: payload01.zuoraProductRatePlanID
+					},
+					(payload map ((payload02,indexOfPayload02) -> ns0#RatePlanChargeData: {
+						ns0#RatePlanCharge: {
+							
+							
+							ns1#AdditionalDiscountAmount__c: payload02.additionalDiscountAmount,
+							ns1#AdditionalDiscountPercent__c: payload02.additionalDiscountPercentage,
+							
+							
+							ns1#PromotionalDiscountAmount__c: payload02.promotionDiscountAmount,				 
+							ns1#PromotionalDiscountPercent__c: payload02.promotionalDiscountPercentage,
+							ns1#PartnerDiscountAmount__c: payload02.partnerDiscountAmount,
+							ns1#PartnerDiscountPercent__c: payload02.partnerDiscountPercentage,
+							ns1#ContractualDiscountAmount__c: payload02.contractualDiscountAmount,
+							
+							ns1#ContractualDiscountPercent__c: payload02.contractualDiscountPercentage ,
+							
+							ns1#LineType__c: payload02.lineType,
+							ns1#ApttusOrderLineItemID__c: payload02.Name,
+							ns1#ApplianceSerialNumber__c:payload02.applianceSerialNumber,
+							ns1#PONumber__c:flowVars.order.orders[0].poNumber,
+							ns1#NetSuiteBusinessArea__c: payload02.SWT_Business_Area__c,
+							ns1#ProductRatePlanChargeId: payload02.zuoraProductRatePlanChargeId,
+							ns1#Quantity: null when payload02.ChargeType == 'Usage' otherwise payload02.quantity,
+							
+							
+							
+							(ns1#Price: ((((payload02.netPrice as :number)/ (payload02.quantity as :number))as :string {format: "#.#####"}) 
+							when (payload02.priceType == 'One Time' and 
+								payload02.netPrice != null and 
+								payload02.quantity != null and 
+								payload02.quantity as :number {format: "0"} != 0
+							)
+							otherwise ((((payload02.netPrice as :number)/ (payload02.quantity as :number)*(1) / (flowVars.order[0].order.term as :number))as :string {format: "#.#####"}) 
+								when (payload02.netPrice !=null and 
+									payload02.quantity !=null and 
+									payload02.billingFrequency !=null and 
+									flowVars.order[0].order.term !=null and 
+									payload02.priceType == 'Recurring' and
+									payload02.quantity as :number {format: "0"} != 0 and 
+									flowVars.order[0].order.term as :number {format: "0"} != 0
+								) 
+								otherwise null
+							)
+						)) when (payload02.Price == null and payload02.productSubType != "TRADE_IN"),
+						(ns1#Price:payload02.Price) when (payload02.Price != null and payload02.productSubType != "TRADE_IN"),
+						(ns1#Price:null) when (payload02.productSubType == "TRADE_IN"),
+						(ns1#DiscountAmount:((payload02.netPrice replace "-" with "")  as :number)) when (payload02.netPrice != null and payload02.productSubType == "TRADE_IN")
+						},
+						((payload02.usagePriceTier default []) map ((payload03,indexOfPayload03) -> ns0#RatePlanChargeTier: {
+							ns1#EndingUnit: payload03.tierEndValue,
+							ns1#Price: payload03.unitPrice  ,
+							ns1#PriceFormat: "PerUnit",
+							ns1#StartingUnit: payload03.tierStartValue,
+							ns1#Tier: indexOfPayload03 + 1
+						} )) 
+					}
+			
+			
+		))
+				}))
+			}
+		}
+	}
+}]]></dw:set-payload>
+                </dw:transform-message>
+                <logger message="Request to Zuora #[payload]" level="INFO" doc:name="Logger"/>
+                <until-successful maxRetries="3" synchronous="true" doc:name="Until Successful">
+                    <zuora:invoke-soap-service config-ref="Zuora__Configuration" soapMetadataKey="ZuoraService-Soap-http://api.zuora.com/||subscribe||Undefined" doc:name="Zuora"/>
+                </until-successful>
+                <mulexml:dom-to-xml-transformer doc:name="DOM to XML"/>
+                <logger message="Response from Zuora : #[payload]" level="INFO" doc:name="Logger"/>
+                <dw:transform-message doc:name="Transform Message">
+                    <dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+%namespace ns1 http://api.zuora.com/
+---
+{
+	subscriptionName : payload.ns1#subscribeResponse.ns1#result.ns1#SubscriptionNumber,
+	subscriptionId: payload.ns1#subscribeResponse.ns1#result.ns1#SubscriptionId,
+	status: payload.ns1#subscribeResponse.ns1#result.ns1#Success,
+	message: payload.ns1#subscribeResponse.ns1#result.ns1#Errors.na1#Message
+}]]></dw:set-payload>
+                </dw:transform-message>
+                <dw:transform-message doc:name="Transform Message">
+                    <dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+{
+	Id: flowVars.order[0].order.orderId,
+	FCM_Zuora_Subscription_ID__c: payload.subscriptionId,
+	FCM_Zuora_Subscription_Name__c: payload.subscriptionName,
+	FCM_Zuora_Error__c: payload.message when payload.status =='false' otherwise ""
+}]]></dw:set-payload>
+                </dw:transform-message>
+                <logger message="Request To SALESFORCE : #[message.payloadAs(java.lang.String)]" level="INFO" doc:name="Logger"/>
+                <until-successful maxRetries="3" millisBetweenRetries="30000" synchronous="true" doc:name="Until Successful">
+                    <sfdc:update-single config-ref="Salesforce__Basic_Authentication" type="Apttus_Config2__Order__c" doc:name="Salesforce"/>
+                </until-successful>
+                <logger message="Response from Salesforce #[payload]" level="INFO" doc:name="Logger"/>
+            </when>
+            <otherwise>
+                <dw:transform-message doc:name="Error Request">
+                    <dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+{
+	Id: flowVars.order[0].order.orderId,
+	FCM_Zuora_Error__c: flowVars.accountUpdateResponse.message
+}]]></dw:set-payload>
+                </dw:transform-message>
+                <logger message="Error Request to SFDC : #[message.payloadAs(java.lang.String)]" level="INFO" doc:name="Logger"/>
+                <until-successful maxRetries="3" millisBetweenRetries="30000" synchronous="true" doc:name="Until Successful">
+                    <sfdc:update-single config-ref="Salesforce__Basic_Authentication" type="Apttus_Config2__Order__c" doc:name="Salesforce"/>
+                </until-successful>
+                <logger message="Error While Activating Account : #[message.payloadAs(java.lang.String)]" level="INFO" doc:name="Logger"/>
+            </otherwise>
+        </choice>
+    </flow>
+    <sub-flow name="fcm-zuora-accountUpdate_Flow">
+        <dw:transform-message doc:name="Transform Message">
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/xml
+%namespace ns0 http://api.zuora.com/
+%namespace ns1 http://object.api.zuora.com/
+---
+{
+	ns0#update: {
+		ns0#zObjects: {
+			ns1#Id: flowVars.order[0].order.zuoraBillToAccount,
+			ns1#Batch: 'Batch1',
+			ns1#BillToId: flowVars.order[0].order.zuoraBillToContact,
+			ns1#SoldToId: flowVars.order[0].order.zuoraSoldToContact,
+			ns1#Status: 'Active'
+		}
+	}
+}]]></dw:set-payload>
+        </dw:transform-message>
+        <logger message="Zuora Account request #[payload]" level="INFO" doc:name="Logger"/>
+        <zuora:invoke-soap-service config-ref="Zuora__Configuration" soapMetadataKey="ZuoraService-Soap-http://api.zuora.com/||update||Account-zObject" doc:name="Zuora"/>
+        <dw:transform-message doc:name="Transform Message">
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+%namespace ns1 http://api.zuora.com/
+---
+{
+	status : payload.ns1#updateResponse.ns1#result.ns1#Success,
+	message: payload.ns1#updateResponse.ns1#result.ns1#Errors.ns1#Message
+}]]></dw:set-payload>
+        </dw:transform-message>
+        <logger message="Account update response #[message.payloadAs(java.lang.String)]" level="INFO" doc:name="Logger"/>
+    </sub-flow>
+    <!-- <flow name="fcm-zuora-orderFlow1">
+        <anypoint-mq:subscriber config-ref="Anypoint_MQ_Connection_01" destination="${FCM-MDM-ORDER.destinationName}" doc:name="Anypoint MQ"/>
+        <logger message="Received from queue : #[payload]" level="INFO" doc:name="Logger"/>
+        <dw:transform-message doc:name="Transform Message">
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+
+payload]]></dw:set-payload>
+        </dw:transform-message>
+    </flow> -->
+</mule>
