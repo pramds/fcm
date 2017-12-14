@@ -1,0 +1,615 @@
+#%RAML 1.0
+baseUri: https://swt-ooe-netsuite.cloudhub.io/v2.0/api/lookup
+title: NetSuite Look Values Cache Service 
+version: dev
+
+types: 
+  internal_id_type: 
+    displayName: Internal Id
+    description: Internal Id of the <<resourcePathName>>
+    type: integer
+    required: false
+  external_id_type:
+    displayName: External Id
+    description: External Id of the <<resourcePathName>>
+    type: string
+    required: false
+  name_type:
+    displayName: Name
+    description: Name of the <<resourcePathName>>
+    type: string
+    required: false
+  acct_num_type:
+    displayName: Account Number
+    description: Account Number of the <<resourcePathName>>
+    type: string|integer
+    required: false
+  unspsc_code_type:
+    displayName: Unspsc Code
+    description: Unspsc Code of the <<resourcePathName>>
+    type: number
+    format: float
+    required: false
+  query_param_type:
+    type: internal_id_type | external_id_type | name_type | acct_num_type | unspsc_code_type
+    
+traits:
+  client-id-required:
+    queryParameters:
+      client_id:
+        type: string
+      client_secret:
+        type: string
+        
+/billingFrequencies: 
+  get: 
+    is: client-id-required
+    description: Gets a list of all Billing Frequencies
+    responses: 
+      200:
+        body:
+          application/json: 
+            example: [{}]
+    queryParameters:
+      internalId:
+        type: internal_id_type
+        required: false
+      externalId:
+        type: external_id_type
+        required: false
+      billingFrequency:
+        type: name_type
+        required: false
+  delete: 
+    description: Invalidates the list of Billing Frequencies
+    responses: 
+      200:
+        body: 
+          application/json: 
+            example: { "message": "Cache Invalidated" }  
+/businessUnits: 
+  get: 
+    is: client-id-required
+    description: Gets a list of all Business Units
+    responses: 
+      200:
+        body:
+          application/json: 
+            example: [{}]
+    queryParameters:
+      businessUnit:
+        type: name_type
+        required: false
+  delete: 
+    description: Invalidates the list of Business Units
+    responses: 
+      200:
+        body: 
+          application/json: 
+            example: { "message": "Cache Invalidated" } 
+/channelRelationships: 
+  get: 
+    is: client-id-required
+    description: Gets a list of all Channel Relationships
+    responses: 
+      200:
+        body:
+          application/json: 
+            example: [{}]
+    queryParameters:
+      channelRelationship:
+        type: name_type
+        required: false
+  delete: 
+    description: Invalidates the list of Channel Relationships
+    responses: 
+      200:
+        body: 
+          application/json: 
+            example: { "message": "Cache Invalidated" }                      
+
+/channelRoutes: 
+  get: 
+    is: client-id-required
+    description: Gets a list of all Channel Routes
+    responses: 
+      200:
+        body:
+          application/json: 
+            example: [{}]
+    queryParameters:     
+      channelRoute:
+        type: name_type
+        required: false     
+  delete: 
+    description: Invalidates the list of Channel Routes
+    responses: 
+      200:
+        body: 
+          application/json: 
+            example: { "message": "Cache Invalidated" }
+/chargeTypes: 
+  get: 
+    is: client-id-required
+    description: Gets a list of all Charge Types
+    responses: 
+      200:
+        body:
+          application/json: 
+            example: [{}]
+    queryParameters:
+      chargeType:
+        type: name_type
+        required: false
+  delete: 
+    description: Invalidates the list of Charge Types
+    responses: 
+      200:
+        body: 
+          application/json: 
+            example: { "message": "Cache Invalidated" }
+/currencies: 
+  get: 
+    is: client-id-required
+    description: Gets a list of all Currencies
+    responses: 
+      200:
+        body:
+          application/json: 
+            example: [{}]
+    queryParameters:
+      internalId:
+        type: internal_id_type
+        required: false
+      externalId:
+        type: external_id_type
+        required: false
+      currency:
+        type: name_type
+        required: false
+  delete: 
+    description: Invalidates the list of Currencies
+    responses: 
+      200:
+        body: 
+          application/json: 
+            example: { "message": "Cache Invalidated" }
+/countries: 
+  get: 
+    is: client-id-required
+    description: Gets a list of all Countries
+    responses: 
+      200:
+        body:
+          application/json: 
+            example: [{}]
+    queryParameters:
+      internalId:
+        type: internal_id_type
+        required: false
+      country:
+        type: name_type
+        required: false
+  delete: 
+    description: Invalidates the list of Countries
+    responses: 
+      200:
+        body: 
+          application/json: 
+            example: { "message": "Cache Invalidated" }
+/countryGroup: 
+  get: 
+    is: client-id-required
+    description: Gets a list of all Country Group
+    responses: 
+      200:
+        body:
+          application/json: 
+            example: [{}]
+    queryParameters:
+      name:
+        type: name_type
+        required: false
+  delete: 
+    description: Invalidates the list of Country Group
+    responses: 
+      200:
+        body: 
+          application/json: 
+            example: { "message": "Cache Invalidated" }
+
+/cmtOne: 
+  get: 
+    is: client-id-required
+    description: Gets a list of all CMT One
+    responses: 
+      200:
+        body:
+          application/json: 
+            example: [{}]
+    queryParameters:      
+      CMTOneName:
+        type: name_type
+        required: false     
+  delete: 
+    description: Invalidates the list of CMT One
+    responses: 
+      200:
+        body: 
+          application/json: 
+            example: { "message": "Cache Invalidated" }
+
+/industrySegments:
+  get: 
+    is: client-id-required
+    description: Gets a list of all Industry Segments
+    responses: 
+      200:
+        body:
+          application/json: 
+            example: [{}]
+    queryParameters:      
+      industrySegment:
+        type: name_type
+        required: false     
+  delete: 
+    description: Invalidates the list of Industry Segments
+    responses: 
+      200:
+        body: 
+          application/json: 
+            example: { "message": "Cache Invalidated" }     
+/industryVerticals:
+  get: 
+    is: client-id-required
+    description: Gets a list of all Industry Verticals
+    responses: 
+      200:
+        body:
+          application/json: 
+            example: [{}]
+    queryParameters:      
+      industryVertical:
+        type: name_type
+        required: false     
+  delete: 
+    description: Invalidates the list of Industry Verticals
+    responses: 
+      200:
+        body: 
+          application/json: 
+            example: { "message": "Cache Invalidated" }   
+
+/orderSources:
+  get: 
+    is: client-id-required
+    description: Gets a list of all Order Sources
+    responses: 
+      200:
+        body:
+          application/json: 
+            example: [{}]
+    queryParameters:      
+      orderSource:
+        type: name_type
+        required: false     
+  delete: 
+    description: Invalidates the list of Order Sources
+    responses: 
+      200:
+        body: 
+          application/json: 
+            example: { "message": "Cache Invalidated" }   
+/orderTypes:
+  get: 
+    is: client-id-required
+    description: Gets a list of all Order Types
+    responses: 
+      200:
+        body:
+          application/json: 
+            example: [{}]
+    queryParameters:      
+      orderType:
+        type: name_type
+        required: false     
+  delete: 
+    description: Invalidates the list of Order Types
+    responses: 
+      200:
+        body: 
+          application/json: 
+            example: { "message": "Cache Invalidated" } 
+/orderSubTypes:
+  get: 
+    is: client-id-required
+    description: Gets a list of all Order Sub Types
+    responses: 
+      200:
+        body:
+          application/json:
+    queryParameters:      
+      orderSubType:
+        type: name_type
+        required: false     
+  delete: 
+    description: Invalidates the list of Order Sub Types
+    responses: 
+      200:
+        body: 
+          application/json: 
+            example: { "message": "Cache Invalidated" }             
+/paymentTerms:
+  get: 
+    is: client-id-required
+    description: Gets a list of all Payment Terms
+    responses: 
+      200:
+        body:
+          application/json: 
+            example: [{}]
+    queryParameters:      
+      paymentTerm:
+        type: name_type
+        required: false     
+  delete: 
+    description: Invalidates the list of Payment Terms
+    responses: 
+      200:
+        body: 
+          application/json: 
+            example: { "message": "Cache Invalidated" }              
+
+/paymentCountriesList:
+  get: 
+    is: client-id-required
+    description: Gets a list of all Payment Countries List
+    responses: 
+      200:
+        body:
+          application/json: 
+            example: [{}]
+    queryParameters:      
+      paymentCountry:
+        type: name_type
+        required: false     
+  delete: 
+    description: Invalidates the list of Payment Countries List
+    responses: 
+      200:
+        body: 
+          application/json: 
+            example: { "message": "Cache Invalidated" }    
+ 
+/poSubtituteTypes:
+  get: 
+    is: client-id-required
+    description: Gets a list of all PO Subtitute Types
+    responses: 
+      200:
+        body:
+          application/json: 
+            example: [{}]
+    queryParameters:      
+      POSubstituteType:
+        type: name_type
+        required: false     
+  delete: 
+    description: Invalidates the list of PO Subtitute Types
+    responses: 
+      200:
+        body: 
+          application/json: 
+            example: { "message": "Cache Invalidated" }   
+                     
+
+/regions:
+  get: 
+    is: client-id-required
+    description: Gets a list of all Regions
+    responses: 
+      200:
+        body:
+          application/json: 
+            example: [{}]
+    queryParameters:      
+      region:
+        type: name_type
+        required: false             
+  delete: 
+    description: Invalidates the list of Regions
+    responses: 
+      200:
+        body: 
+          application/json: 
+            example: { "message": "Cache Invalidated" }   
+
+/revrecMethodSupport:
+  get: 
+    is: client-id-required
+    description: Gets a list of all Rev Rec MethodSupport Services
+    responses: 
+      200:
+        body:
+          application/json: 
+            example: [{}]
+    queryParameters:      
+      revRecMethodSupportService:
+        type: name_type
+        required: false             
+  delete: 
+    description: Invalidates the list of Rev Rec MethodSupport Services
+    responses: 
+      200:
+        body: 
+          application/json: 
+            example: { "message": "Cache Invalidated" }     
+
+/ssContractTerms:
+  get: 
+    is: client-id-required
+    description: Gets a list of all SS Contract Terms
+    responses: 
+      200:
+        body:
+          application/json: 
+            example: [{}]
+    queryParameters:      
+      ssContractTerm:
+        type: name_type
+        required: false             
+  delete: 
+    description: Invalidates the list of SS Contract Terms
+    responses: 
+      200:
+        body: 
+          application/json: 
+            example: { "message": "Cache Invalidated" } 
+/states:
+  get: 
+    is: client-id-required
+    description: Gets a list of all States
+    responses: 
+      200:
+        body:
+          application/json: 
+            example: [{}]
+    queryParameters:      
+      state:
+        type: name_type
+        required: false             
+  delete: 
+    description: Invalidates the list of States
+    responses: 
+      200:
+        body: 
+          application/json: 
+            example: { "message": "Cache Invalidated" }  
+
+
+/taxExemptionReasonCodes:
+  get: 
+    is: client-id-required
+    description: Gets a list of all Tax Exemption Reason Codes
+    responses: 
+      200:
+        body:
+          application/json: 
+            example: [{}]
+    queryParameters:      
+      taxExemptionReasonCode:
+        type: name_type
+        required: false            
+  delete: 
+    description: Invalidates the list of Tax Exemption Reason Codes
+    responses: 
+      200:
+        body: 
+          application/json: 
+            example: { "message": "Cache Invalidated" }  
+          
+/kyribaTransactionTypes:
+  get: 
+    is: client-id-required
+    description: Gets a list of all Kyriba Transaction Types
+    responses: 
+      200:
+        body:
+          application/json: 
+            example: [{}]
+    queryParameters:      
+      transactionType:
+        type: name_type
+        required: false            
+  delete: 
+    description: Invalidates the list of Kyriba Transaction Types
+    responses: 
+      200:
+        body: 
+          application/json: 
+            example: { "message": "Cache Invalidated" }  
+ 
+/vsoePricing:
+  get: 
+    is: client-id-required
+    description: Gets a list of VSOE Pricing methods
+    responses: 
+      200:
+        body:
+          application/json: 
+            example: [{}]
+    queryParameters:      
+      VSOEPricingMethod:
+        type: name_type
+        required: false            
+  delete: 
+    description: Invalidates the list of VSOE Pricing methods
+    responses: 
+      200:
+        body: 
+          application/json: 
+            example: { "message": "Cache Invalidated" }  
+
+            
+/marketOfferings: 
+  get: 
+    is: client-id-required
+    description: Gets a list of all Market Offerings
+    responses: 
+      200:
+        body:
+          application/json: 
+            example: [{}]
+    queryParameters:
+      name:
+        type: name_type
+        required: false
+  delete: 
+    description: Invalidates the list of Market Offerings
+    responses: 
+      200:
+        body: 
+          application/json: 
+            example: { "message": "Cache Invalidated" }
+
+/segmentOfferings: 
+  get: 
+    is: client-id-required
+    description: Gets a list of all Segment Offerings
+    responses: 
+      200:
+        body:
+          application/json: 
+            example: [{}]
+    queryParameters:
+      name:
+        type: name_type
+        required: false
+  delete: 
+    description: Invalidates the list of Segment Offerings
+    responses: 
+      200:
+        body: 
+          application/json: 
+            example: { "message": "Cache Invalidated" }
+/riskRatings:
+  get: 
+    is: client-id-required
+    description: Gets a list of all Risk Ratings
+    responses: 
+      200:
+        body:
+          application/json: 
+            example: [{}]
+    queryParameters:      
+      riskRating:
+        type: name_type
+        required: false             
+  delete: 
+    description: Invalidates the list of Risk Ratings
+    responses: 
+      200:
+        body: 
+          application/json: 
+            example: { "message": "Cache Invalidated" }  
+            
