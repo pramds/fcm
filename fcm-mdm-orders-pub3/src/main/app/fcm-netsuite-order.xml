@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:sfdc="http://www.mulesoft.org/schema/mule/sfdc" xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking"
+	xmlns:tls="http://www.mulesoft.org/schema/mule/tls" xmlns:scripting="http://www.mulesoft.org/schema/mule/scripting"
+	xmlns:metadata="http://www.mulesoft.org/schema/mule/metadata"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:validation="http://www.mulesoft.org/schema/mule/validation"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:json="http://www.mulesoft.org/schema/mule/json" xmlns:vm="http://www.mulesoft.org/schema/mule/vm"
+	xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw" xmlns:netsuite="http://www.mulesoft.org/schema/mule/netsuite"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/netsuite http://www.mulesoft.org/schema/mule/netsuite/current/mule-netsuite.xsd
+http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd
+http://www.mulesoft.org/schema/mule/vm http://www.mulesoft.org/schema/mule/vm/current/mule-vm.xsd
+http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-current.xsd
+http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/scripting http://www.mulesoft.org/schema/mule/scripting/current/mule-scripting.xsd
+http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/current/mule-tls.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd
+http://www.mulesoft.org/schema/mule/sfdc http://www.mulesoft.org/schema/mule/sfdc/current/mule-sfdc.xsd">
+
+
+	<sub-flow name="fcm-upsert-newbusinessorderFlow">
+		<logger
+			message="#####################New and Renewal Order################################"
+			level="INFO" doc:name="Logger" />
+        <set-variable variableName="nsOrderPayload" value="#[payload]" doc:name="nsOrderPayload"/>
+        <dw:transform-message metadata:id="c26fe47e-c5b4-4edd-a788-9fb71dc7c46d" doc:name="Transform Message">
+            <dw:input-payload doc:sample="sample_data\MyPojo_4.dwl" mimeType="application/java"/>
+            <dw:input-variable doc:sample="sample_data\MyPojo_5.dwl" mimeType="application/java" variableName="currencyISOCodes"/>
+            <dw:set-payload resource="classpath:upsertSalesOrderList.dwl"/>
+        </dw:transform-message>
+        <logger message="Order Request : #[message.payloadAs(java.lang.String)]" level="INFO" doc:name="Logger"/>
+        <until-successful maxRetries="3" millisBetweenRetries="30000" synchronous="true" doc:name="Until Successful">
+            <netsuite:upsert-list config-ref="NetSuite__Request_Level_Token_Based_Authentication" recordType="SALES_ORDER" doc:name="NetSuite"/>
+        </until-successful>
+
+        <json:object-to-json-transformer doc:name="Object to JSON"/>
+        <logger message="NetSuite Response For Order: #[payload]" level="INFO" doc:name="Logger"/>
+        <dw:transform-message doc:name="Transform Message">
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+payload map {
+	Id: $.baseRef.externalId,
+	FCM_InternalId__c : $.baseRef.internalId when $.status.isSuccess == true otherwise "",
+	FCM_NetSuite_Error__c : $.status.statusDetail[0].message when $.status.isSuccess == false otherwise ""
+	
+}]]></dw:set-payload>
+        </dw:transform-message>
+        <logger message="Request to SFDC : #[message.payloadAs(java.lang.String)]" level="INFO" doc:name="Logger"/>
+        <until-successful maxRetries="3" millisBetweenRetries="30000" synchronous="true" doc:name="Until Successful">
+            <sfdc:update config-ref="Salesforce__Basic_Authentication" type="Apttus_Config2__Order__c" doc:name="Salesforce">
+                <sfdc:objects ref="#[payload]"/>
+            </sfdc:update>
+        </until-successful>
+
+        <logger message="SFDC Response : #[message.payloadAs(java.lang.String)]" level="INFO" doc:name="Logger"/>
+
+
+		<logger
+			message="#######################New and Renewal Order Flow Ended#########################"
+			level="INFO" doc:name="Logger" />
+	</sub-flow>
+
+
+
+</mule>
